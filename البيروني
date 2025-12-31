@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Al-Biruni البيروني Pocket</title>
+    <style>
+        :root {
+            --primary: #52b1e1; /* Le bleu de l'image */
+            --bg-light: #f0f7fa;
+            --text-dark: #2d3436;
+            --card-white: #ffffff;
+            --gray-text: #636e72;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            margin: 0; 
+            display: flex; 
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background-color: var(--card-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* En-tête avec Localisation */
+        .header {
+            padding: 25px 20px;
+            background: #fff;
+        }
+        .loc-label { font-size: 0.75rem; color: var(--gray-text); font-weight: 600; }
+        .loc-name { font-size: 1.1rem; font-weight: 800; color: var(--text-dark); margin-bottom: 15px; }
+        
+        .arabic-title {
+            display: block;
+            text-align: center;
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin: 10px 0;
+            font-family: serif;
+        }
+
+        /* Bannière Principale (La carte bleue de l'image) */
+        .hero-card {
+            margin: 0 20px;
+            padding: 25px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #74b9ff, #0984e3);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(9, 132, 227, 0.2);
+        }
+
+        .hero-card::after {
+            content: "🕌";
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 8rem;
+            opacity: 0.15;
+        }
+
+        #next-prayer-label { font-size: 0.9rem; font-weight: 600; opacity: 0.9; }
+        #timer { font-size: 2.8rem; font-weight: 800; margin: 5px 0; font-family: 'Courier New', monospace; }
+        #next-time { font-size: 1rem; opacity: 0.8; font-weight: 600; }
+
+        /* Liste des prières style "Table" */
+        .prayer-section {
+            padding: 25px 20px;
+            flex-grow: 1;
+        }
+
+        .prayer-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .prayer-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 0;
+            border-bottom: 1px solid #f1f2f6;
+        }
+
+        .prayer-row.active {
+            background-color: rgba(82, 177, 225, 0.05);
+            margin: 0 -20px;
+            padding: 18px 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .p-name { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); }
+        .p-time { font-size: 1.05rem; font-weight: 800; color: var(--primary); }
+
+        /* Pied de page et boutons */
+        .footer {
+            padding: 20px;
+            background: #fff;
+            border-top: 1px solid #f1f2f6;
+        }
+
+        .btn-donate {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(82, 177, 225, 0.3);
+            transition: transform 0.2s;
+        }
+        
+        .btn-donate:active { transform: scale(0.98); }
+
+        .settings-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        select {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #dfe6e9;
+            background: #f9f9f9;
+            font-size: 0.8rem;
+        }
+
+        [dir="rtl"] .prayer-row { flex-direction: row-reverse; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <div class="loc-label" id="txt-your-loc">Your Location</div>
+        <div class="loc-name" id="city-display">Jingzhou, CN ▾</div>
+        <span class="arabic-title">البيروني</span>
+    </div>
+
+    <div class="hero-card">
+        <div id="next-prayer-name">Dhuhr</div>
+        <div id="timer">11:45:00</div>
+        <div id="next-label-info">Next Pray: Asr</div>
+    </div>
+
+    <div class="prayer-section">
+        <div id="prayer-list">
+            </div>
+    </div>
+
+    <div class="footer">
+        <button class="btn-donate" onclick="syncGPS()" id="btn-sync">GPS SYNC</button>
+        <div class="settings-row">
+            <select id="lang-select" onchange="changeLang(this.value)">
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+                <option value="en" selected>English</option>
+                <option value="zh">中文</option>
+            </select>
+            <select id="method-select" onchange="updateCalc()">
+                <option value="18,17">MWL (18°)</option>
+                <option value="12,12">France (12°)</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<audio id="athan-audio" src="https://www.islamicfinder.org/athan/adhan.mp3"></audio>
+
+<script>
+    const i18n = {
+        fr: { loc: "Votre Position", next: "Prochaine", nextP: "Prochaine prière", btn: "SYNCHRO GPS", sobh: "Fajr", dohr: "Dhuhr", asr: "Asr", maghreb: "Maghrib", icha: "Isha" },
+        ar: { loc: "موقعك", next: "الصلاة القادمة", nextP: "الصلاة التالية", btn: "تحديث الموقع", sobh: "الفجر", dohr: "الظهر", asr: "العصر", maghreb: "المغرب", icha: "العشاء" },
+        en: { loc: "Your Location", next: "Current", nextP: "Next Pray", btn: "GPS SYNC", sobh: "Fajr", dohr: "Dhuhr", asr: "Asr", maghreb: "Maghrib", icha: "Isha" },
+        zh: { loc: "您的位置", next: "当前礼拜", nextP: "下一次礼拜", btn: "同步 GPS", sobh: "晨礼", dohr: "晌礼", asr: "晡礼", maghreb: "昏礼", icha: "宵礼" }
+    };
+
+    let currentLang = 'en';
+    let config = JSON.parse(localStorage.getItem('biruni_v5')) || { lat: 30.33, lng: 112.24, tz: 8, city: "Jingzhou" };
+    let prayerTimes = [];
+
+    function changeLang(val) {
+        currentLang = val;
+        document.body.dir = (val === 'ar') ? "rtl" : "ltr";
+        updateCalc();
+    }
+
+    function syncGPS() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                config.lat = pos.coords.latitude;
+                config.lng = pos.coords.longitude;
+                config.tz = -(new Date().getTimezoneOffset() / 60);
+                localStorage.setItem('biruni_v5', JSON.stringify(config));
+                updateCalc();
+            });
+        }
+    }
+
+    function updateCalc() {
+        const t = i18n[currentLang];
+        const angles = document.getElementById('method-select').value.split(',');
+        const sobhA = parseFloat(angles[0]), ichaA = parseFloat(angles[1]);
+        
+        const now = new Date();
+        const day = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+        const b = (360/365)*(day-81), br = b * Math.PI/180;
+        const delta = 23.45 * Math.sin(br) * Math.PI/180;
+        const eTime = 9.87*Math.sin(2*br) - 7.53*Math.cos(br) - 1.5*Math.sin(br);
+        const dohrDec = 12 + (config.tz * 15 - config.lng)/15 - (eTime/60);
+
+        const getH = (a) => Math.abs(Math.acos((Math.sin(-a*Math.PI/180) - Math.sin(config.lat*Math.PI/180)*Math.sin(delta)) / (Math.cos(config.lat*Math.PI/180)*Math.cos(delta))) * 180/Math.PI/15);
+        const v = Math.abs(config.lat - (delta * 180/Math.PI));
+        const altAsr = Math.atan(1/(1 + Math.tan(v*Math.PI/180))) * 180/Math.PI;
+
+        prayerTimes = [
+            {n: t.sobh, t: dohrDec - getH(sobhA)},
+            {n: t.dohr, t: dohrDec},
+            {n: t.asr, t: dohrDec + getH(altAsr)},
+            {n: t.maghreb, t: dohrDec + getH(0.833)},
+            {n: t.icha, t: dohrDec + getH(ichaA)}
+        ];
+
+        document.getElementById('txt-your-loc').innerText = t.loc;
+        document.getElementById('btn-sync').innerText = t.btn;
+        
+        let html = "";
+        prayerTimes.forEach(p => {
+            const h = Math.floor(p.t), m = Math.floor((p.t*60)%60);
+            html += `<div class="prayer-row">
+                        <span class="p-name">${p.n}</span>
+                        <span class="p-time">${h}:${m.toString().padStart(2,'0')}</span>
+                     </div>`;
+        });
+        document.getElementById('prayer-list').innerHTML = html;
+    }
+
+    function runTimer() {
+        const t = i18n[currentLang];
+        const now = new Date();
+        const cur = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+        
+        let nextIdx = prayerTimes.findIndex(p => p.t > cur);
+        let next = nextIdx !== -1 ? prayerTimes[nextIdx] : prayerTimes[0];
+        let current = nextIdx !== -1 ? prayerTimes[nextIdx-1] || prayerTimes[4] : prayerTimes[4];
+
+        let diff = next.t - cur; if (diff < 0) diff += 24;
+        const h = Math.floor(diff), m = Math.floor((diff*60)%60), s = Math.floor((diff*3600)%60);
+        
+        document.getElementById('timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        document.getElementById('next-prayer-name').innerText = current.n;
+        document.getElementById('next-label-info').innerText = `${t.nextP}: ${next.n}`;
+
+        if(h==0 && m==0 && s==0) document.getElementById('athan-audio').play();
+    }
+
+    updateCalc();
+    setInterval(runTimer, 1000);
+</script>
+</body>
+</html>
